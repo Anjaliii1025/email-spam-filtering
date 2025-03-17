@@ -1,0 +1,3 @@
+git add .
+git commit -m "Organized Flask project and updated files"
+git push origin main
