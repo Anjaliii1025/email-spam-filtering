@@ -26,7 +26,7 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_
 # Feature extraction using TF-IDF
 vectorizer = TfidfVectorizer(min_df=1, stop_words='english', lowercase=True)
 x_train_features = vectorizer.fit_transform(x_train)
-x_test_features = vectorizer.transform(x_test)   # ✅ Fixed (transform instead of fit_transform)
+x_test_features = vectorizer.transform(x_test)   
 
 # Save vectorizer
 with open("vectorizer.pkl", "wb") as f:
@@ -34,7 +34,7 @@ with open("vectorizer.pkl", "wb") as f:
 
 # Train model
 model = RandomForestClassifier()
-model.fit(x_train_features, y_train)  # ✅ Fixed (removed double fitting)
+model.fit(x_train_features, y_train) 
 
 # Evaluate on training data
 train_predictions = model.predict(x_train_features)
