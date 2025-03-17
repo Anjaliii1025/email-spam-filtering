@@ -14,11 +14,6 @@
                <textarea name="email_content" id="email_content" cols="30" rows="10" required></textarea>
                <input type="submit" value="Predict">
             </form>
-             {% if spam_prediction %}
-                <p>This email is <strong>{{ spam_prediction }}</strong>.</p>
-            {% elif error %}
-                <p>{{ error }}</p>
-            {% endif %}
         </div>
     </main>
 </body>
