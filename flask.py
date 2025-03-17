@@ -3,8 +3,8 @@ from functions import (load_model, predict_spam)
 
 app = Flask(__name__)
 
-@app.route("/email")
-def email():
+@app.route("/")
+def index():
     return render_template("index.html", spam_prediction=None, error=None)
 
 
