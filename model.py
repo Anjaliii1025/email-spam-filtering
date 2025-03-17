@@ -1,113 +1,80 @@
-pip install scikit-learn
-
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
 import pickle
 
-df = pd.read_csv("/content/drive/MyDrive/mail_data.csv")
-print(df)
+# Load data
+df = pd.read_csv("mail_data.csv")
 
-data = df.where(pd.notnull(df), " ")
+# Replace NaN values with empty strings
+data = df.where(pd.notnull(df), "")
 
-data.head()
+# Encode labels ('spam' = 0, 'ham' = 1)
+data.loc[data['Category'] == 'spam', 'Category'] = 0
+data.loc[data['Category'] == 'ham', 'Category'] = 1
 
-data.info()
-
-data.shape
-
-data.loc[data['Category'] == 'spam','Category',] = 0
-data.loc[data['Category'] == 'ham','Category',] = 1
-
+# Split into input and target
 x = data['Message']
-print(x)
+y = data['Category'].astype(int)
 
-y = data['Category']
-print(y)
+# Split data into training and test sets
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
 
-x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.3, random_state=42)
+# Feature extraction using TF-IDF
+vectorizer = TfidfVectorizer(min_df=1, stop_words='english', lowercase=True)
+x_train_features = vectorizer.fit_transform(x_train)
+x_test_features = vectorizer.transform(x_test)   # ✅ Fixed (transform instead of fit_transform)
 
-print(x.shape)
-print(x_train.shape)
-print(x_test.shape)
+# Save vectorizer
+with open("vectorizer.pkl", "wb") as f:
+    pickle.dump(vectorizer, f)
 
-print(y.shape)
-print(y_train.shape)
-print(y_test.shape)
-
-feature_extraction = TfidfVectorizer(min_df = 1, stop_words = 'english', lowercase=True)
-
-x_train_features = feature_extraction.fit_transform(x_train)
-x_test_features = feature_extraction.fit_transform(x_test)
-x_train_features.shape[1]
-
-with open("vectorizer.pickle", "wb") as f:
-    pickle.dump(feature_extraction,f)
-
-y_train = y_train.astype('int')
-y_test = y_test.astype("int")
-
-print(x_train)
-
-print(x_train_features)
-
+# Train model
 model = RandomForestClassifier()
+model.fit(x_train_features, y_train)  # ✅ Fixed (removed double fitting)
 
-model.fit(x_train_features, y_train)
+# Evaluate on training data
+train_predictions = model.predict(x_train_features)
+train_accuracy = accuracy_score(y_train, train_predictions)
+print("Training Accuracy:", train_accuracy)
 
-model.fit(x_test_features, y_test)
+# Evaluate on test data
+test_predictions = model.predict(x_test_features)
+test_accuracy = accuracy_score(y_test, test_predictions)
+precision = precision_score(y_test, test_predictions)
+recall = recall_score(y_test, test_predictions)
+f1 = f1_score(y_test, test_predictions)
 
-prediction_on_training_data = model.predict(x_train_features)
-accuracy_on_training_data = accuracy_score(y_train, prediction_on_training_data)
+print("\n--- Test Results ---")
+print(f"Test Accuracy: {test_accuracy:.2f}")
+print(f"Precision: {precision:.2f}")
+print(f"Recall: {recall:.2f}")
+print(f"F1-Score: {f1:.2f}")
 
-print("Accuracy on training data : ", accuracy_on_training_data)
+# Print classification report and confusion matrix
+print("\nClassification Report:\n", classification_report(y_test, test_predictions))
+print("\nConfusion Matrix:\n", confusion_matrix(y_test, test_predictions))
 
-prediction_on_test_data = model.predict(x_test_features)
-accuracy_on_test_data = accuracy_score(y_test, prediction_on_test_data)
+# Save the model
+with open("model.pkl", "wb") as f:
+    pickle.dump(model, f)
 
-print("Accuracy on test data : ", accuracy_on_test_data)
+# Load and test the model with sample input
+with open("model.pkl", "rb") as f:
+    loaded_model = pickle.load(f)
 
-accuracy = accuracy_score(y_test, prediction_on_test_data)
-precision = precision_score(y_test, prediction_on_test_data)
-recall = recall_score(y_test, prediction_on_test_data)
-f1 = f1_score(y_test, prediction_on_test_data)
+# Sample input
+sample_input = ["Nah I don't think he goes to usf, he lives around here though"]
 
-print("Accuracy:", accuracy)
-print("Precision:", precision)
-print("Recall:", recall)
-print("F1-score:", f1)
+# Load vectorizer
+with open("vectorizer.pkl", "rb") as f:
+    vectorizer = pickle.load(f)
 
-# Print a classification report for more detailed evaluation
-print("\nClassification Report:\n", classification_report(y_test, prediction_on_test_data))
+input_data = vectorizer.transform(sample_input)
+prediction = loaded_model.predict(input_data)
 
-# Print the confusion matrix
-print("\nConfusion Matrix:\n", confusion_matrix(y_test, prediction_on_test_data))
-
-input = [""]
-
-input_data = feature_extraction.transform(input)
-
-prediction = model.predict(input_data)
-
-print(prediction)
-
-if (prediction[0]==1):
-  print("Ham mail")
-else:
-  print("Spam mail")
-
-with open("model_pickle","wb") as f:
-  pickle.dump(model,f)
-
-with open("model_pickle","rb") as f:
-  mp = pickle.load(f)
-
-input = ["Nah I don't think he goes to usf, he lives around here though"]
-
-input_data = feature_extraction.transform(input)
-
-mp.predict(input_data)
+result = "Ham" if prediction[0] == 1 else "Spam"
+print("\nSample Prediction:", result)
